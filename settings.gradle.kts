@@ -1,2 +1,2 @@
-rootProject.name = "dev-salm"
+rootProject.name = "salm"
 

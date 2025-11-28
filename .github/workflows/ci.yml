@@ -1,4 +1,4 @@
-name: SALM Full Auto Deployment
+name: SALM PROJECT COMMIT 
 
 on:
   push:
