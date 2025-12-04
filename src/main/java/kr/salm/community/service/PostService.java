@@ -3,10 +3,10 @@ package kr.salm.community.service;
 import kr.salm.auth.entity.User;
 import kr.salm.community.dto.PostCreateRequest;
 import kr.salm.community.dto.PostResponse;
+import kr.salm.community.entity.Category;
 import kr.salm.community.entity.Post;
-import kr.salm.community.repository.BookmarkRepository;
-import kr.salm.community.repository.PostLikeRepository;
-import kr.salm.community.repository.PostRepository;
+import kr.salm.community.entity.PostImage;
+import kr.salm.community.repository.*;
 import kr.salm.core.dto.PageResponse;
 import kr.salm.core.exception.BusinessException;
 import kr.salm.core.util.HtmlSanitizer;
@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +26,8 @@ import java.util.stream.Collectors;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PostImageRepository postImageRepository;
+    private final CategoryRepository categoryRepository;
     private final PostLikeRepository likeRepository;
     private final BookmarkRepository bookmarkRepository;
 
@@ -34,7 +35,12 @@ public class PostService {
      * 게시글 생성
      */
     @Transactional
-    public Post create(PostCreateRequest request, User author, List<String> images) {
+    public Post create(PostCreateRequest request, User author, List<String> imagePaths) {
+        // 카테고리 조회
+        Category category = categoryRepository.findBySlug(request.getCategory())
+                .or(() -> categoryRepository.findByName(request.getCategory()))
+                .orElseThrow(() -> BusinessException.notFound("카테고리"));
+
         // XSS 방지
         String safeTitle = HtmlSanitizer.sanitize(request.getTitle());
         String safeContent = HtmlSanitizer.sanitizeContent(request.getContent());
@@ -43,21 +49,35 @@ public class PostService {
                 .title(safeTitle)
                 .content(safeContent)
                 .author(author)
-                .category(request.getCategory())
-                .images(images)
+                .category(category)
                 .productUrl(request.getProductUrl())
                 .build();
 
-        // 썸네일 설정
-        if (images != null && !images.isEmpty()) {
-            int idx = (request.getThumbnailIndex() != null && 
-                       request.getThumbnailIndex() >= 0 && 
-                       request.getThumbnailIndex() < images.size()) 
-                       ? request.getThumbnailIndex() : 0;
-            post.setThumbnail(images.get(idx));
+        Post saved = postRepository.save(post);
+
+        // 이미지 저장
+        if (imagePaths != null && !imagePaths.isEmpty()) {
+            int thumbnailIdx = (request.getThumbnailIndex() != null &&
+                    request.getThumbnailIndex() >= 0 &&
+                    request.getThumbnailIndex() < imagePaths.size())
+                    ? request.getThumbnailIndex() : 0;
+
+            for (int i = 0; i < imagePaths.size(); i++) {
+                PostImage image = PostImage.builder()
+                        .post(saved)
+                        .path(imagePaths.get(i))
+                        .displayOrder(i)
+                        .isThumbnail(i == thumbnailIdx)
+                        .build();
+                postImageRepository.save(image);
+
+                if (i == thumbnailIdx) {
+                    saved.setThumbnail(imagePaths.get(i));
+                }
+            }
         }
 
-        Post saved = postRepository.save(post);
+        postRepository.save(saved);
         log.info("게시글 작성: id={}, title={}", saved.getId(), saved.getTitle());
         return saved;
     }
@@ -88,7 +108,8 @@ public class PostService {
     @Transactional
     public PostResponse getDetail(Long id, User currentUser) {
         Post post = findById(id);
-        PostResponse response = PostResponse.from(post);
+        List<PostImage> images = postImageRepository.findByPostOrderByDisplayOrderAsc(post);
+        PostResponse response = PostResponse.from(post, images);
 
         if (currentUser != null) {
             response.setLiked(likeRepository.existsByPostAndUser(post, currentUser));
@@ -108,11 +129,20 @@ public class PostService {
     }
 
     /**
-     * 카테고리별 목록
+     * 카테고리별 목록 (slug 또는 name)
      */
     @Transactional(readOnly = true)
-    public PageResponse<PostResponse> findByCategory(String category, int page, int size) {
-        Page<Post> posts = postRepository.findByCategory(category, PageRequest.of(page, size));
+    public PageResponse<PostResponse> findByCategory(String categorySlugOrName, int page, int size) {
+        Page<Post> posts = postRepository.findByCategorySlug(categorySlugOrName, PageRequest.of(page, size));
+        
+        // slug로 못 찾으면 name으로 시도
+        if (posts.isEmpty()) {
+            Category category = categoryRepository.findByName(categorySlugOrName).orElse(null);
+            if (category != null) {
+                posts = postRepository.findByCategory(category, PageRequest.of(page, size));
+            }
+        }
+        
         return PageResponse.of(posts, toResponseList(posts.getContent()));
     }
 
@@ -154,9 +184,14 @@ public class PostService {
             throw BusinessException.forbidden("수정 권한이 없습니다.");
         }
 
+        // 카테고리 조회
+        Category category = categoryRepository.findBySlug(request.getCategory())
+                .or(() -> categoryRepository.findByName(request.getCategory()))
+                .orElseThrow(() -> BusinessException.notFound("카테고리"));
+
         post.setTitle(HtmlSanitizer.sanitize(request.getTitle()));
         post.setContent(HtmlSanitizer.sanitizeContent(request.getContent()));
-        post.setCategory(request.getCategory());
+        post.setCategory(category);
         post.setProductUrl(request.getProductUrl());
 
         return postRepository.save(post);
@@ -176,6 +211,14 @@ public class PostService {
         post.softDelete();
         postRepository.save(post);
         log.info("게시글 삭제: id={}", id);
+    }
+
+    /**
+     * 모든 카테고리 조회
+     */
+    @Transactional(readOnly = true)
+    public List<Category> findAllCategories() {
+        return categoryRepository.findAllEnabled();
     }
 
     private List<PostResponse> toResponseList(List<Post> posts) {

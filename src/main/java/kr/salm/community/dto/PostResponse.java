@@ -1,10 +1,12 @@
 package kr.salm.community.dto;
 
 import kr.salm.community.entity.Post;
+import kr.salm.community.entity.PostImage;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -16,7 +18,11 @@ public class PostResponse {
     private Long id;
     private String title;
     private String content;
-    private String category;
+    
+    // 카테고리
+    private Long categoryId;
+    private String categoryName;
+    private String categorySlug;
     
     // 작성자 정보
     private Long authorId;
@@ -50,12 +56,16 @@ public class PostResponse {
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .category(post.getCategory())
+                .categoryId(post.getCategory() != null ? post.getCategory().getId() : null)
+                .categoryName(post.getCategoryName())
+                .categorySlug(post.getCategorySlug())
                 .authorId(post.getAuthor().getId())
                 .authorName(post.getAuthor().getDisplayName())
                 .authorProfileImage(post.getAuthor().getProfileImage())
                 .thumbnail(post.getThumbnail())
-                .images(post.getImages())
+                .images(post.getImages().stream()
+                        .map(PostImage::getPath)
+                        .collect(Collectors.toList()))
                 .productUrl(post.getProductUrl())
                 .productName(post.getProductName())
                 .productPrice(post.getProductPrice())
@@ -65,6 +75,14 @@ public class PostResponse {
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();
+    }
+
+    public static PostResponse from(Post post, List<PostImage> images) {
+        PostResponse response = from(post);
+        response.setImages(images.stream()
+                .map(PostImage::getPath)
+                .collect(Collectors.toList()));
+        return response;
     }
 
     /**

@@ -8,12 +8,9 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 게시글 Entity
- */
 @Entity
 @Table(name = "posts", indexes = {
-    @Index(name = "idx_post_category", columnList = "category"),
+    @Index(name = "idx_post_category", columnList = "category_id"),
     @Index(name = "idx_post_author", columnList = "author_id"),
     @Index(name = "idx_post_created", columnList = "created_at DESC")
 })
@@ -38,17 +35,16 @@ public class Post extends BaseEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @Column(nullable = false, length = 50)
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "post_images", joinColumns = @JoinColumn(name = "post_id"))
-    @Column(name = "image_path")
-    @OrderColumn(name = "image_order")
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
     @Builder.Default
-    private List<String> images = new ArrayList<>();
+    private List<PostImage> images = new ArrayList<>();
 
-    @Column(length = 255)
+    @Column(length = 500)
     private String thumbnail;
 
     // 상품 연동 (향후 확장)
@@ -61,7 +57,7 @@ public class Post extends BaseEntity {
     @Column(length = 50)
     private String productPrice;
 
-    // 통계
+    // 통계 (비정규화 - 성능 목적)
     @Column(nullable = false)
     @Builder.Default
     private int viewCount = 0;
@@ -74,7 +70,6 @@ public class Post extends BaseEntity {
     @Builder.Default
     private int commentCount = 0;
 
-    // 상태
     @Column(nullable = false)
     @Builder.Default
     private boolean deleted = false;
@@ -101,5 +96,24 @@ public class Post extends BaseEntity {
 
     public void softDelete() {
         this.deleted = true;
+    }
+
+    // 이미지 추가 헬퍼
+    public void addImage(PostImage image) {
+        images.add(image);
+        image.setPost(this);
+    }
+
+    public void clearImages() {
+        images.clear();
+    }
+
+    // 카테고리명 조회 (편의 메서드)
+    public String getCategoryName() {
+        return category != null ? category.getName() : null;
+    }
+
+    public String getCategorySlug() {
+        return category != null ? category.getSlug() : null;
     }
 }
