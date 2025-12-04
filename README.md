@@ -1,85 +1,156 @@
-# 📌 SALM 프로젝트 버전별 기능 정리!
+# SALM v3.0
+
+살림 정보 공유 + 상품 연결 플랫폼
+
+## 🚀 주요 특징
+
+- **웹 + 앱 동시 지원**: Session(웹) + JWT(앱) 듀얼 인증
+- **OAuth 스탠바이**: Google/Kakao/Naver 설정만 하면 바로 활성화
+- **확장성 고려**: 모듈 구조로 코디 추천 등 기능 추가 용이
+- **보안 강화**: XSS 방지, CSRF, BCrypt(12), 파일 검증
+
+## 📁 프로젝트 구조
+
+```
+salm/
+├── src/main/java/kr/salm/
+│   ├── config/           # 보안, MVC 설정
+│   ├── core/             # 공통 (Entity, DTO, Exception, Util)
+│   ├── auth/             # 인증/회원
+│   ├── community/        # 게시글, 댓글, 좋아요, 북마크
+│   ├── product/          # 상품 연동 (향후 확장)
+│   └── file/             # 파일 업로드
+├── src/main/resources/
+│   ├── templates/        # Thymeleaf 템플릿
+│   ├── static/           # CSS, JS
+│   └── application.yml   # 설정
+├── build.gradle.kts
+└── .env.example          # 환경변수 템플릿
+```
+
+## ⚙️ 설치 및 실행
+
+### 1. 환경 변수 설정
+
+```bash
+cp .env.example .env
+# .env 파일을 열어 실제 값 입력
+```
+
+### 2. Gradle Wrapper 다운로드
+
+```bash
+# gradle-wrapper.jar 다운로드 필요 (바이너리라 포함 안됨)
+gradle wrapper
+# 또는 직접 다운로드: 
+# https://services.gradle.org/distributions/gradle-8.5-bin.zip
+```
+
+### 3. 데이터베이스 생성
+
+```sql
+CREATE DATABASE salm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'salm_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON salm.* TO 'salm_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 4. 빌드 및 실행
+
+```bash
+# 환경변수 로드 후 실행
+export $(cat .env | xargs) && ./gradlew bootRun
+
+# 또는 JAR 빌드
+./gradlew build -x test
+java -jar build/libs/salm.jar
+```
+
+### 5. 접속
+
+- 웹: http://localhost:8080
+- API: http://localhost:8080/api/...
+
+## 🔐 보안 체크리스트
+
+| 항목 | 상태 |
+|------|------|
+| 환경변수 분리 | ✅ |
+| CSRF 토큰 | ✅ |
+| XSS 방지 (OWASP Encoder) | ✅ |
+| 파일 업로드 검증 | ✅ |
+| BCrypt (strength 12) | ✅ |
+| 세션 관리 | ✅ |
+| 보안 헤더 (CSP, XSS) | ✅ |
+
+## 📡 API 엔드포인트
+
+### 인증
+```
+POST /api/auth/signup      # 회원가입
+POST /api/auth/login       # 로그인 (JWT 발급)
+POST /api/auth/refresh     # 토큰 갱신
+POST /api/auth/logout      # 로그아웃
+GET  /api/auth/me          # 내 정보
+GET  /api/auth/check/*     # 중복 확인
+```
+
+### 게시글
+```
+GET  /api/posts            # 목록 (페이징)
+GET  /api/posts/latest     # 최신
+GET  /api/posts/popular    # 인기
+GET  /api/posts/{id}       # 상세
+GET  /api/posts/search     # 검색
+POST /api/posts            # 작성 (인증)
+PUT  /api/posts/{id}       # 수정 (인증)
+DELETE /api/posts/{id}     # 삭제 (인증)
+```
+
+### 댓글/좋아요/북마크
+```
+GET  /api/posts/{id}/comments      # 댓글 목록
+POST /api/posts/{id}/comments      # 댓글 작성
+DELETE /api/posts/{postId}/comments/{commentId}  # 댓글 삭제
+POST /api/posts/{id}/like          # 좋아요 토글
+POST /api/posts/{id}/bookmark      # 북마크 토글
+```
+
+## 🔧 OAuth 활성화 방법
+
+`.env`에 키 입력하면 자동 활성화:
+
+```bash
+# Google
+OAUTH_GOOGLE_CLIENT_ID=your-client-id
+OAUTH_GOOGLE_CLIENT_SECRET=your-secret
+
+# Kakao
+OAUTH_KAKAO_CLIENT_ID=your-rest-api-key
+OAUTH_KAKAO_CLIENT_SECRET=your-secret
+
+# Naver
+OAUTH_NAVER_CLIENT_ID=your-client-id
+OAUTH_NAVER_CLIENT_SECRET=your-secret
+```
+
+Redirect URI 설정: `https://salm.kr/oauth2/callback/{provider}`
+
+## 📱 앱 연동
+
+모든 `/api/**` 엔드포인트는 JWT 인증 지원:
+
+```
+Authorization: Bearer {access_token}
+```
+
+## 🏗️ 향후 확장 계획
+
+- [ ] 상품 연동 (쿠팡 파트너스 API)
+- [ ] 코디 추천 모듈
+- [ ] 알림 기능
+- [ ] 관리자 페이지
 
 ---
 
-## 🚀 프로젝트 개요
-
-SALM 프로젝트는 살림에 관련된 정보를 공유하며 자연스럽게 상품으로 연결하는 지식 기반 플랫폼입니다.  
-본 문서는 **v2.0 ~ v2.4**까지 구현된 기능 및 향후 버전 계획을 정리하여 제공합니다.
-
----
-
-## 🔖 버전별 기능 요약
-
-### ✅ v2.0 주요 기능
-- 프로젝트 초기 환경 구성 (Spring Boot, MariaDB 10.5.22)
-- 기본 사용자 인증 기능 구현
-  - 일반 회원가입 및 로그인 기능
-  - ID/비밀번호 찾기 기능
-- 비밀번호 강도 체크 및 유효성 검사
-- 회원가입 완료 시 안내 메시지 및 로그인 페이지 리다이렉트
-- 로그인 실패 시 실패 원인 메시지 출력 (아이디 미존재/비밀번호 오류)
-
----
-
-### ✅ v2.1 주요 기능
-- 기본 UI 및 디자인 구조 구축
-  - 메인 페이지 카드형 레이아웃 구성
-  - 메인 페이지 반응형 슬라이드 구조 적용
-- 게시글 목록 페이지 및 무한스크롤 기초 구조 구현
-- 게시글 작성 페이지 기본 UI 구현
-
----
-
-### ✅ v2.2 주요 기능
-- 전반적 UI/UX 리팩토링 및 통일성 개선
-- 메인 페이지 콘텐츠 구조 개선
-  - 추천 아이템 슬라이드 및 무한스크롤 일반 게시글 구현
-- 상단 메뉴 구조 개선
-  - 비로그인: 글쓰기, 로그인 버튼 표시
-  - 로그인: 사용자 프로필 아이콘 및 드롭다운 메뉴 (마이페이지, 로그아웃)
-- 회원가입 기능 강화
-  - 아이디 중복 검사 및 이메일 중복 검사 추가
-  - 전화번호 및 생년월일 입력 시 자동 포맷 적용
-- 이미지 업로드 기본 기능 구현 (`/data/salm-img-uploads`)
-
----
-
-### ✅ v2.3 주요 기능
-- 게시글 작성 페이지 업그레이드
-  - 이미지 첨부 드래그앤드롭 기능 개선
-  - 카테고리 추가 (일상, 주방, 욕실, 청소/정리, 반려동물)
-  - 카테고리 선택 필수화 및 UI 개선
-- 메인 페이지 카테고리 버튼 추가 (기본 UI 구조 반영)
-- 메인 페이지 추천 슬라이드 자동 전환 및 무한스크롤 개선
-- 메인 페이지 및 글쓰기 페이지 전반적인 UI 개선 및 최적화
-
----
-
-### ✅ v2.4 주요 기능
-- 글쓰기 페이지 기능 고도화
-  - 이미지 썸네일 Drag & Drop 순서 변경 기능 추가
-  - 첫 번째 이미지 자동 대표 지정 및 썸네일 내 `★ 대표` 배지 표시
-- 전체 코드 구조 및 스타일 정리
-  - 글쓰기 페이지의 이미지 입력 요소 개선
-  - 대표 이미지 구분 및 순서 전송을 위한 `representativeIndex` 필드 추가
-- 메인 페이지 스타일과의 일관성 유지하며 레이아웃 안정화 완료
-
----
-
-## 🛠 사용 기술
-- Java 17, Spring Boot 3.x, Gradle
-- MariaDB 10.5.22
-- Thymeleaf 템플릿 엔진
-- OAuth (Google, Kakao, Naver 예정)
-
----
-
-## 📝 문서 갱신 기록
-- 최초 작성: v2.4 개발 중 (2025-05-06)
-- 최종 갱신: v2.4 완료 기준 (2025-05-06)
-
----
-
-📣 **SALM 프로젝트는 지속적인 업데이트로 개선될 예정이며, 모든 변경 사항은 본 문서에 버전별로 명확히 정리됩니다.**
-
+© 2025 SALM

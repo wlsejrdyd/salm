@@ -1,5 +1,45 @@
-<div th:fragment="common-footer">
-  <footer class="footer">
-    <p>&copy; 2025 SALM. All rights reserved.</p>
-  </footer>
-</div>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<footer th:fragment="footer" class="bg-gray-800 text-white mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- 로고 및 설명 -->
+            <div>
+                <span class="text-2xl font-bold">SALM</span>
+                <p class="mt-2 text-gray-400 text-sm">
+                    살림에 관한 다양한 정보를 공유하고<br>
+                    좋은 상품을 연결하는 플랫폼
+                </p>
+            </div>
+            
+            <!-- 링크 -->
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider">카테고리</h3>
+                <ul class="mt-4 space-y-2">
+                    <li><a th:href="@{/category/일상}" class="text-gray-400 hover:text-white text-sm">일상</a></li>
+                    <li><a th:href="@{/category/주방}" class="text-gray-400 hover:text-white text-sm">주방</a></li>
+                    <li><a th:href="@{/category/욕실}" class="text-gray-400 hover:text-white text-sm">욕실</a></li>
+                    <li><a th:href="@{/category/청소}" class="text-gray-400 hover:text-white text-sm">청소/정리</a></li>
+                    <li><a th:href="@{/category/반려동물}" class="text-gray-400 hover:text-white text-sm">반려동물</a></li>
+                </ul>
+            </div>
+            
+            <!-- 지원 -->
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider">지원</h3>
+                <ul class="mt-4 space-y-2">
+                    <li><a href="#" class="text-gray-400 hover:text-white text-sm">이용약관</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white text-sm">개인정보처리방침</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white text-sm">문의하기</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-8 pt-8 border-t border-gray-700">
+            <p class="text-center text-gray-400 text-sm">
+                &copy; <span th:text="${#dates.year(#dates.createNow())}">2025</span> SALM. All rights reserved.
+            </p>
+        </div>
+    </div>
+</footer>
+</html>

@@ -1,44 +1,107 @@
-<!-- salm/src/main/resources/templates/fragments/header.html -->
-<head>
-  <meta charset="UTF-8">
-  <title th:text="${pageTitle} ?: 'SALM'">SALM</title>
-  <link rel="stylesheet" href="/css/style.css">
-
-  <!-- ✅ favicon: 여러 브라우저 대응 위해 ico + png 둘 다 명시 -->
-  <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
-  <link rel="icon" type="image/png" sizes="512x512" href="/img/favicon.png">
-  <link rel="apple-touch-icon" href="/img/favicon.png">
-</head>
-<div th:fragment="common-header">
-  <header style="background-color: #fff; border-bottom: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 32px; display: flex; justify-content: space-between; align-items: center; height: 90px;">
-      <a href="/" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
-        <img src="/img/salm-logo.png" alt="SALM 로고" style="height: 72px;">
-        <span style="font-size: 1.5rem; font-weight: bold; color: #333;">SALM</span>
-      </a>
-      <nav>
-        <ul style="list-style: none; display: flex; gap: 32px; margin: 0; padding: 0; align-items: center;">
-          <li><a href="/write" style="text-decoration: none; color: #444; font-size: 1rem;">글쓰기</a></li>
-
-          <!-- 로그인 상태 -->
-          <li th:if="${#authorization.expression('isAuthenticated()')}">
-            <div class="dropdown">
-              <img src="/img/default-profile.png" alt="프로필" class="profile-icon">
-              <div class="dropdown-content">
-                <a href="/mypage">마이페이지</a>
-                <form th:action="@{/logout}" method="post">
-                  <button type="submit" class="logout-btn">로그아웃</button>
-                </form>
-              </div>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<header th:fragment="header" class="bg-white shadow-sm sticky top-0 z-50">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- 로고 -->
+            <div class="flex items-center">
+                <a th:href="@{/}" class="flex-shrink-0 flex items-center">
+                    <span class="text-2xl font-bold text-primary">SALM</span>
+                </a>
+                
+                <!-- 데스크톱 메뉴 -->
+                <div class="hidden md:ml-10 md:flex md:space-x-8">
+                    <a th:href="@{/posts}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">전체</a>
+                    <a th:href="@{/category/일상}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">일상</a>
+                    <a th:href="@{/category/주방}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">주방</a>
+                    <a th:href="@{/category/욕실}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">욕실</a>
+                    <a th:href="@{/category/청소}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">청소/정리</a>
+                    <a th:href="@{/category/반려동물}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">반려동물</a>
+                </div>
             </div>
-          </li>
-
-          <!-- 비로그인 상태 -->
-          <li th:if="${#authorization.expression('!isAuthenticated()')}">
-            <a href="/login" style="text-decoration: none; color: #444; font-size: 1rem;">로그인</a>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-</div>
+            
+            <!-- 우측 버튼 -->
+            <div class="flex items-center space-x-4">
+                <!-- 글쓰기 버튼 -->
+                <a th:href="@{/posts/write}" 
+                   class="hidden sm:inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-indigo-700 transition">
+                    글쓰기
+                </a>
+                
+                <!-- 비로그인 -->
+                <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-2">
+                    <a th:href="@{/login}" class="text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">로그인</a>
+                    <a th:href="@{/signup}" class="hidden sm:inline-flex text-gray-700 hover:text-primary px-3 py-2 text-sm font-medium">회원가입</a>
+                </div>
+                
+                <!-- 로그인 상태 -->
+                <div sec:authorize="isAuthenticated()" class="relative" id="user-menu">
+                    <button type="button" onclick="toggleUserMenu()" 
+                            class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                        <img class="h-8 w-8 rounded-full bg-gray-200" 
+                             th:src="${#authentication.principal.user.profileImage} ?: '/img/default-avatar.png'" 
+                             alt="프로필">
+                        <span class="hidden md:ml-2 md:block text-gray-700" sec:authentication="principal.displayName">사용자</span>
+                        <svg class="hidden md:block ml-1 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- 드롭다운 메뉴 -->
+                    <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                        <div class="py-1">
+                            <a th:href="@{/mypage}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">마이페이지</a>
+                            <a th:href="@{/mypage/bookmarks}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">북마크</a>
+                            <a th:href="@{/mypage/posts}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">내 글</a>
+                            <div class="border-t border-gray-100"></div>
+                            <form th:action="@{/logout}" method="post" class="block">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">로그아웃</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 모바일 메뉴 버튼 -->
+                <button type="button" onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 모바일 메뉴 -->
+        <div id="mobile-menu" class="hidden md:hidden pb-4">
+            <div class="pt-2 space-y-1">
+                <a th:href="@{/posts}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">전체</a>
+                <a th:href="@{/category/일상}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">일상</a>
+                <a th:href="@{/category/주방}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">주방</a>
+                <a th:href="@{/category/욕실}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">욕실</a>
+                <a th:href="@{/category/청소}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">청소/정리</a>
+                <a th:href="@{/category/반려동물}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">반려동물</a>
+            </div>
+            <div class="pt-4 border-t border-gray-200">
+                <a th:href="@{/posts/write}" class="block w-full text-center px-4 py-2 bg-primary text-white rounded-lg">글쓰기</a>
+            </div>
+        </div>
+    </nav>
+    
+    <script>
+        function toggleUserMenu() {
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        }
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(e) {
+            const userMenu = document.getElementById('user-menu');
+            const dropdown = document.getElementById('user-dropdown');
+            if (userMenu && !userMenu.contains(e.target) && dropdown) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    </script>
+</header>
+</html>

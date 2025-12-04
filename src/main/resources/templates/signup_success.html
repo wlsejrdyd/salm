@@ -1,24 +1,0 @@
-<!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <title>회원가입 완료 | SALM</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/auth.css">
-</head>
-<body>
-
-  <div th:replace="~{fragments/header :: common-header}"></div>
-
-  <main class="auth-container">
-    <section class="auth-box" style="text-align: center;">
-      <h1>🎉 회원가입이 완료되었습니다!</h1>
-      <p style="margin-top: 1rem;">이제 로그인을 통해 살림 서비스를 이용하실 수 있습니다.</p>
-      <br />
-      <a href="/login" style="color: #a34c1d; font-weight: bold;">로그인하러 가기 →</a>
-    </section>
-  </main>
-
-  <div th:replace="~{fragments/footer :: common-footer}"></div>
-</body>
-</html>

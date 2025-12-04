@@ -1,73 +1,87 @@
 spring:
-  datasource:
-    url: jdbc:mariadb://localhost:9981/salm
-    username: salm_admin
-    password: Salm123QWE!@#
-    driver-class-name: org.mariadb.jdbc.Driver
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
+  # 데이터소스
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:salm}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+        default_batch_fetch_size: 100
+        format_sql: false
+        show_sql: false
+
+  # 파일 업로드
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 50MB
+      enabled: true
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: true
-    properties:
-      hibernate:
-        show_sql: true         # 콘솔에 SQL 보여줌
-        format_sql: true       # 보기 좋게 정렬
-        highlight_sql: true    # (가능한 경우 색상 강조)
-        use_sql_comments: true # SQL 주석 표시
-
+  # Thymeleaf
   thymeleaf:
-    cache: false
+    cache: true
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
 
+  # 메일
   mail:
-    host: smtp.example.com
-    port: 587
-    username: your_email@example.com
-    password: your_email_password
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
     default-encoding: UTF-8
 
+  # OAuth2 (스탠바이 - 키 입력 시 활성화)
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: your-google-client-id
-            client-secret: your-google-client-secret
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - profile
-              - email
-            client-name: Google
+            client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
+            client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
+            redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+            scope: profile, email
 
           kakao:
-            client-id: your-kakao-rest-api-key
-            client-authentication-method: POST
+            client-id: ${OAUTH_KAKAO_CLIENT_ID:}
+            client-secret: ${OAUTH_KAKAO_CLIENT_SECRET:}
+            client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - profile_nickname
-              - account_email
+            redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+            scope: profile_nickname, account_email
             client-name: Kakao
 
           naver:
-            client-id: your-naver-client-id
-            client-secret: your-naver-client-secret
+            client-id: ${OAUTH_NAVER_CLIENT_ID:}
+            client-secret: ${OAUTH_NAVER_CLIENT_SECRET:}
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            scope:
-              - name
-              - email
+            redirect-uri: "{baseUrl}/oauth2/callback/{registrationId}"
+            scope: name, email
             client-name: Naver
 
         provider:
@@ -83,13 +97,43 @@ spring:
             user-info-uri: https://openapi.naver.com/v1/nid/me
             user-name-attribute: response
 
-file:
-  upload-dir: /data/salm-img-uploads
+# JWT 설정 (앱용)
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-here-must-be-at-least-32-characters}
+  access-token-expiry: 3600000      # 1시간
+  refresh-token-expiry: 604800000   # 7일
 
+# 파일 업로드 설정
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/data/salm/uploads}
+  allowed-extensions: jpg,jpeg,png,gif,webp
+  max-file-count: 10
+  max-file-size: 10485760  # 10MB
+
+# 로깅
 logging:
   level:
-    org.springframework: INFO
-    org.hibernate.SQL: DEBUG                              # SQL 로그 출력
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # 파라미터 출력
-    org.springframework.security: INFO
+    root: INFO
+    kr.salm: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
 
+# 서버 설정
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
+  error:
+    include-message: never
+    include-stacktrace: never
+    whitelabel:
+      enabled: false
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024

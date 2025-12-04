@@ -1,46 +1,156 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-  <meta charset="UTF-8">
-  <title>SALM | 살림 정보 공유 플랫폼</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/index.css">
-  <script src="/js/index.js" defer></script>
+    <th:block th:replace="~{fragments/layout :: head('홈')}"/>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
-  <div th:replace="~{fragments/header :: common-header}"></div>
+<th:block th:replace="~{fragments/layout :: header}"/>
 
-  <main class="index-container">
-    <!-- 추천 슬라이드 -->
-    <section class="recommend-slider-section">
-      <h2>추천 살림 아이템</h2>
-      <div class="recommend-slider" id="recommend-slider">
-        <!-- JS로 슬라이드 항목 삽입 -->
-      </div>
+<main class="flex-1">
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-primary to-emerald-600 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">살림에 대한 다양한 이야기</h1>
+            <p class="text-lg md:text-xl opacity-90 mb-8">일상 속 유용한 살림 팁과 추천 아이템을 공유해보세요</p>
+            <a th:href="@{/posts/write}" 
+               class="inline-flex items-center px-6 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-gray-100 transition shadow-lg">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                글쓰기
+            </a>
+        </div>
     </section>
 
-    <!-- ✅ 카테고리 필터 영역 추가 -->
-    <section class="category-filter-section">
-      <div class="category-buttons">
-        <button class="category-btn active" data-value="">전체</button>
-        <button class="category-btn" data-value="일상">일상</button>
-        <button class="category-btn" data-value="주방">주방</button>
-        <button class="category-btn" data-value="욕실">욕실</button>
-        <button class="category-btn" data-value="청소정리">청소/정리</button>
-        <button class="category-btn" data-value="반려동물">반려동물</button>
-      </div>
+    <!-- Categories -->
+    <section class="py-8 bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap justify-center gap-3">
+                <a th:href="@{/posts}" 
+                   class="px-5 py-2 rounded-full bg-primary text-white font-medium hover:bg-primary-dark transition">
+                    전체
+                </a>
+                <a th:href="@{/category/일상}" 
+                   class="px-5 py-2 rounded-full bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">
+                    일상
+                </a>
+                <a th:href="@{/category/주방}" 
+                   class="px-5 py-2 rounded-full bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">
+                    주방
+                </a>
+                <a th:href="@{/category/욕실}" 
+                   class="px-5 py-2 rounded-full bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">
+                    욕실
+                </a>
+                <a th:href="@{/category/청소}" 
+                   class="px-5 py-2 rounded-full bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">
+                    청소/정리
+                </a>
+                <a th:href="@{/category/반려동물}" 
+                   class="px-5 py-2 rounded-full bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">
+                    반려동물
+                </a>
+            </div>
+        </div>
     </section>
 
-    <!-- 일반 게시글 무한 스크롤 -->
-    <section class="post-section">
-      <h2>살림에 대한 다양한 이야기</h2>
-      <div class="post-list" id="post-list">
-        <!-- JS로 게시글 삽입 -->
-      </div>
+    <!-- Popular Posts -->
+    <section class="py-12" th:if="${popularPosts != null and !popularPosts.empty}">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">🔥 인기 게시글</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <article th:each="post : ${popularPosts}" 
+                         class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition group">
+                    <a th:href="@{/posts/{id}(id=${post.id})}" class="block">
+                        <div class="aspect-video bg-gray-200 overflow-hidden">
+                            <img th:if="${post.thumbnail}" 
+                                 th:src="@{/data/{path}(path=${post.thumbnail})}"
+                                 alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <div th:unless="${post.thumbnail}" 
+                                 class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <span th:text="${post.category}" 
+                                  class="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded mb-2"></span>
+                            <h3 th:text="${post.title}" class="font-semibold text-gray-900 line-clamp-2 mb-2">제목</h3>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <span th:text="${post.authorName}">작성자</span>
+                                <span class="mx-2">·</span>
+                                <span>
+                                    ❤️ <span th:text="${post.likeCount}">0</span>
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            </div>
+        </div>
     </section>
-  </main>
 
-  <div th:replace="~{fragments/footer :: common-footer}"></div>
+    <!-- Latest Posts -->
+    <section class="py-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">📝 최신 게시글</h2>
+                <a th:href="@{/posts}" class="text-primary hover:underline">전체보기 →</a>
+            </div>
+            
+            <div th:if="${latestPosts == null or latestPosts.empty}" 
+                 class="text-center py-16 text-gray-500">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p>아직 게시글이 없습니다.</p>
+                <a th:href="@{/posts/write}" class="inline-block mt-4 text-primary hover:underline">첫 글을 작성해보세요!</a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" th:unless="${latestPosts == null or latestPosts.empty}">
+                <article th:each="post : ${latestPosts}" 
+                         class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition group">
+                    <a th:href="@{/posts/{id}(id=${post.id})}" class="block">
+                        <div class="aspect-video bg-gray-200 overflow-hidden">
+                            <img th:if="${post.thumbnail}" 
+                                 th:src="@{/data/{path}(path=${post.thumbnail})}"
+                                 alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <div th:unless="${post.thumbnail}" 
+                                 class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <span th:text="${post.category}" 
+                                  class="inline-block px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded mb-2"></span>
+                            <h3 th:text="${post.title}" class="font-semibold text-gray-900 line-clamp-2 mb-2">제목</h3>
+                            <p th:text="${post.content}" class="text-sm text-gray-600 line-clamp-2 mb-3">내용...</p>
+                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                <span th:text="${post.authorName}">작성자</span>
+                                <div class="flex items-center space-x-3">
+                                    <span>👁️ <span th:text="${post.viewCount}">0</span></span>
+                                    <span>❤️ <span th:text="${post.likeCount}">0</span></span>
+                                    <span>💬 <span th:text="${post.commentCount}">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+
+<th:block th:replace="~{fragments/layout :: footer}"/>
+<th:block th:replace="~{fragments/layout :: scripts}"/>
+
 </body>
 </html>

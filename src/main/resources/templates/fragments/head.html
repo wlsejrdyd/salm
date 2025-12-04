@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SALM - 살림 정보 공유 플랫폼">
+    <title th:text="${title} + ' - SALM'">SALM</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+</head>
+</html>

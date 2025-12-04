@@ -1,0 +1,30 @@
+# 로컬 개발 환경 설정
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+  thymeleaf:
+    cache: false
+
+  # 로컬에서 OAuth 비활성화 (키 없으면 무시)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
+logging:
+  level:
+    kr.salm: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework.web: DEBUG
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
