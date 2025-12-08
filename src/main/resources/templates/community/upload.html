@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('영상 업로드')}"></head>
+<body class="bg-gray-50 min-h-screen">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="max-w-2xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6 md:p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">영상 업로드</h1>
+
+            <div th:if="${error}" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600" th:text="${error}"></div>
+
+            <form th:action="@{/videos/upload}" method="post" enctype="multipart/form-data" id="uploadForm">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <!-- 동영상 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">동영상 <span class="text-red-500">*</span></label>
+                    <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-emerald-400 transition cursor-pointer">
+                        <input type="file" name="videoFile" id="videoFile" accept="video/*" class="hidden" required>
+                        <div id="placeholder">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="mt-2 text-gray-500">클릭하거나 동영상을 드래그하세요</p>
+                            <p class="text-sm text-gray-400">MP4, MOV, AVI (최대 100MB, 3분)</p>
+                        </div>
+                        <div id="preview" class="hidden">
+                            <video id="player" class="max-h-64 mx-auto rounded-lg" controls></video>
+                            <p id="videoInfo" class="mt-2 text-sm text-gray-500"></p>
+                            <button type="button" onclick="removeVideo()" class="mt-2 text-red-500 hover:text-red-600 text-sm">삭제</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 카테고리 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">카테고리 <span class="text-red-500">*</span></label>
+                    <div class="flex flex-wrap gap-2">
+                        <label th:each="cat : ${categories}" class="category-btn">
+                            <input type="radio" name="category" th:value="${cat.slug}" class="hidden" required>
+                            <span class="px-4 py-2 rounded-full border border-gray-300 cursor-pointer hover:border-emerald-400 transition inline-block"
+                                  th:text="${cat.name}">카테고리</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 제목 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">제목 <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" required maxlength="200"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                           placeholder="어떤 영상인가요?">
+                </div>
+
+                <!-- 설명 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">설명</label>
+                    <textarea name="description" rows="4" maxlength="2000"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                              placeholder="영상에 대한 설명 (선택)"></textarea>
+                </div>
+
+                <!-- 해시태그 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">해시태그</label>
+                    <input type="text" name="hashtags"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                           placeholder="#요리 #꿀팁 #간단레시피">
+                </div>
+
+                <!-- 상품 링크 -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">상품 링크 (선택)</label>
+                    <input type="url" name="productUrl"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                           placeholder="https://...">
+                </div>
+
+                <div class="flex space-x-3">
+                    <button type="submit" id="submitBtn"
+                            class="flex-1 bg-emerald-500 text-white py-3 rounded-lg font-medium hover:bg-emerald-600 transition disabled:opacity-50">
+                        업로드
+                    </button>
+                    <a href="/" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 text-center">취소</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <style>
+        .category-btn input:checked + span {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+    </style>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const videoFile = document.getElementById('videoFile');
+        const placeholder = document.getElementById('placeholder');
+        const preview = document.getElementById('preview');
+        const player = document.getElementById('player');
+        const videoInfo = document.getElementById('videoInfo');
+
+        dropZone.onclick = () => videoFile.click();
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-emerald-400', 'bg-emerald-50');
+        };
+
+        dropZone.ondragleave = () => {
+            dropZone.classList.remove('border-emerald-400', 'bg-emerald-50');
+        };
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-emerald-400', 'bg-emerald-50');
+            if (e.dataTransfer.files[0]?.type.startsWith('video/')) {
+                videoFile.files = e.dataTransfer.files;
+                handleVideo(e.dataTransfer.files[0]);
+            }
+        };
+
+        videoFile.onchange = (e) => {
+            if (e.target.files[0]) handleVideo(e.target.files[0]);
+        };
+
+        function handleVideo(file) {
+            if (file.size > 100 * 1024 * 1024) {
+                alert('파일 크기는 100MB 이하여야 합니다.');
+                return;
+            }
+
+            const url = URL.createObjectURL(file);
+            player.src = url;
+
+            player.onloadedmetadata = () => {
+                if (player.duration > 180) {
+                    alert('영상 길이는 3분 이내여야 합니다.');
+                    removeVideo();
+                    return;
+                }
+                const min = Math.floor(player.duration / 60);
+                const sec = Math.floor(player.duration % 60);
+                const size = (file.size / 1024 / 1024).toFixed(1);
+                videoInfo.textContent = `${file.name} (${min}:${sec.toString().padStart(2, '0')}, ${size}MB)`;
+            };
+
+            placeholder.classList.add('hidden');
+            preview.classList.remove('hidden');
+        }
+
+        function removeVideo() {
+            videoFile.value = '';
+            player.src = '';
+            placeholder.classList.remove('hidden');
+            preview.classList.add('hidden');
+        }
+
+        document.getElementById('uploadForm').onsubmit = function() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '업로드 중...';
+        };
+    </script>
+</body>
+</html>
