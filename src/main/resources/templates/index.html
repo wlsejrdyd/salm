@@ -61,7 +61,7 @@
                             </div>
                         </div>
                         <h3 class="mt-2 text-sm font-medium text-gray-900 line-clamp-2" th:text="${v.title}">제목</h3>
-                        <p class="text-xs text-gray-500" th:text="${v.authorName}">작성자</p>
+                        <p class="text-xs text-gray-500" th:text="${v.authorNickname}">작성자</p>
                     </a>
                 </article>
             </div>
@@ -93,7 +93,7 @@
                         </div>
                         <h3 class="mt-2 text-sm font-medium text-gray-900 line-clamp-2" th:text="${v.title}">제목</h3>
                         <div class="flex items-center text-xs text-gray-500 mt-1">
-                            <span th:text="${v.authorName}">작성자</span>
+                            <span th:text="${v.authorNickname}">작성자</span>
                             <span class="mx-1">·</span>
                             <span th:text="${v.viewCount} + '회'">0회</span>
                         </div>

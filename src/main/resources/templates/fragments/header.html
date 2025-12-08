@@ -6,13 +6,13 @@
             <a href="/" class="text-2xl font-bold text-emerald-500">SALM</a>
 
             <nav class="hidden md:flex space-x-6">
+                <a href="/videos" class="text-gray-600 hover:text-emerald-500">영상</a>
+                <a href="/closet" class="text-gray-600 hover:text-emerald-500">🧥 옷장</a>
+                <span class="text-gray-300">|</span>
                 <a href="/category/cooking" class="text-gray-600 hover:text-emerald-500">요리</a>
                 <a href="/category/lifehack" class="text-gray-600 hover:text-emerald-500">생활꿀팁</a>
                 <a href="/category/diy" class="text-gray-600 hover:text-emerald-500">DIY</a>
                 <a href="/category/beauty" class="text-gray-600 hover:text-emerald-500">뷰티</a>
-                <a href="/category/fitness" class="text-gray-600 hover:text-emerald-500">운동</a>
-                <a href="/category/parenting" class="text-gray-600 hover:text-emerald-500">육아</a>
-                <a href="/category/pet" class="text-gray-600 hover:text-emerald-500">반려동물</a>
             </nav>
 
             <div class="flex items-center space-x-4">
@@ -35,12 +35,11 @@
                             <img th:if="${user.profileImage}" th:src="${user.profileImage}" class="w-full h-full object-cover" alt="">
                             <span th:unless="${user.profileImage}" th:text="${#strings.substring(user.nickname, 0, 1)}">U</span>
                         </div>
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
                     </button>
                     <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 border z-50">
                         <a href="/mypage" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">마이페이지</a>
+                        <a href="/closet" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">🧥 내 옷장</a>
+                        <a href="/closet/avatar" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">👔 내 코디</a>
                         <a href="/mypage/bookmarks" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">북마크</a>
                         <hr class="my-2">
                         <form th:action="@{/logout}" method="post">
@@ -61,13 +60,15 @@
 
     <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
         <div class="px-4 py-3 space-y-2">
+            <a href="/videos" class="block py-2 text-gray-600 font-medium">📹 영상</a>
+            <a href="/closet" class="block py-2 text-gray-600 font-medium">🧥 옷장</a>
+            <a href="/closet/avatar" class="block py-2 text-gray-600">👔 내 코디</a>
+            <a href="/closet/outfit" class="block py-2 text-gray-600">🎲 코디 추천</a>
+            <hr class="my-2">
             <a href="/category/cooking" class="block py-2 text-gray-600">🍳 요리</a>
             <a href="/category/lifehack" class="block py-2 text-gray-600">💡 생활꿀팁</a>
             <a href="/category/diy" class="block py-2 text-gray-600">🔨 DIY</a>
             <a href="/category/beauty" class="block py-2 text-gray-600">✨ 뷰티</a>
-            <a href="/category/fitness" class="block py-2 text-gray-600">💪 운동</a>
-            <a href="/category/parenting" class="block py-2 text-gray-600">👶 육아</a>
-            <a href="/category/pet" class="block py-2 text-gray-600">🐾 반려동물</a>
         </div>
     </div>
 

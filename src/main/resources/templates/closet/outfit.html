@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('오늘의 코디')}"></head>
+<body class="bg-gray-50 min-h-screen">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- 날씨 정보 -->
+        <div class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">오늘의 날씨</p>
+                    <h2 class="text-5xl font-bold" th:text="${weather.temperature} + '°'">5°</h2>
+                    <p class="text-blue-100 mt-1" th:text="${weather.city} + ' · 체감 ' + ${weather.feelsLike} + '°'">서울 · 체감 2°</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-7xl mb-2" id="weatherIcon">🌤️</p>
+                </div>
+            </div>
+            <p class="mt-4 text-lg" th:text="${weather.recommendation}">추천 메시지</p>
+        </div>
+
+        <!-- 코디 결과 -->
+        <div class="bg-white rounded-2xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold">🎲 오늘의 추천 코디</h2>
+                <button onclick="loadRandomOutfit()" class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">
+                    다시 추천
+                </button>
+            </div>
+
+            <!-- 아바타 + 옷 레이어 -->
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- 아바타 영역 -->
+                <div class="flex-1">
+                    <div class="aspect-[3/4] bg-gradient-to-b from-gray-100 to-gray-50 rounded-2xl relative overflow-hidden" id="outfitCanvas">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center text-gray-400" id="emptyState">
+                                <p class="text-6xl mb-4">👤</p>
+                                <p>옷을 등록하고 온도를 설정하면</p>
+                                <p>자동으로 코디를 추천해드려요!</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 옷 레이어들 (위에서부터: 아우터 → 상의 → 하의 → 신발) -->
+                        <div id="clothLayers" class="absolute inset-0 flex flex-col items-center justify-center p-4">
+                            <div id="layer-outer" class="outfit-layer" style="height: 35%; width: 80%;"></div>
+                            <div id="layer-tops" class="outfit-layer" style="height: 25%; width: 70%;"></div>
+                            <div id="layer-bottoms" class="outfit-layer" style="height: 30%; width: 60%;"></div>
+                            <div id="layer-shoes" class="outfit-layer" style="height: 10%; width: 40%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 선택된 옷 목록 -->
+                <div class="md:w-64 space-y-4" id="outfitList">
+                    <div class="text-center text-gray-400 py-8">
+                        <p>추천 버튼을 눌러주세요</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 옷이 부족할 때 안내 -->
+        <div id="noClothesWarning" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <p class="text-yellow-800">
+                ⚠️ 현재 온도(<span id="currentTemp"></span>°C)에 맞는 옷이 부족해요!
+                <a href="/closet/add" class="text-yellow-600 underline">옷을 등록</a>하고 온도를 설정해보세요.
+            </p>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <style>
+        .outfit-layer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .outfit-layer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+
+    <script th:inline="javascript">
+        const currentTemp = [[${weather.temperature}]];
+        document.getElementById('currentTemp').textContent = currentTemp;
+
+        // 페이지 로드시 자동 추천
+        loadRandomOutfit();
+
+        async function loadRandomOutfit() {
+            try {
+                const res = await fetch(`/api/closet/outfit/random?temperature=${currentTemp}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    showError('로그인이 필요합니다.');
+                    return;
+                }
+
+                const outfit = data.data;
+                const categories = ['outer', 'tops', 'bottoms', 'shoes'];
+                const categoryNames = { outer: '아우터', tops: '상의', bottoms: '하의', shoes: '신발' };
+                const categoryIcons = { outer: '🧥', tops: '👕', bottoms: '👖', shoes: '👟' };
+
+                let hasAny = false;
+                let listHtml = '';
+
+                categories.forEach(cat => {
+                    const layer = document.getElementById(`layer-${cat}`);
+                    const cloth = outfit[cat];
+
+                    if (cloth && cloth.imagePath) {
+                        hasAny = true;
+                        layer.innerHTML = `<img src="${cloth.imagePath}" alt="${cloth.name}">`;
+                        listHtml += `
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                    <img src="${cloth.imagePath}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-gray-500">${categoryIcons[cat]} ${categoryNames[cat]}</p>
+                                    <p class="font-medium truncate">${cloth.name}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        layer.innerHTML = `<div class="text-4xl opacity-30">${categoryIcons[cat]}</div>`;
+                        listHtml += `
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg opacity-50">
+                                <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
+                                    ${categoryIcons[cat]}
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-xs text-gray-500">${categoryNames[cat]}</p>
+                                    <p class="text-gray-400">없음</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                document.getElementById('outfitList').innerHTML = listHtml;
+                document.getElementById('emptyState').style.display = hasAny ? 'none' : 'block';
+                document.getElementById('noClothesWarning').classList.toggle('hidden', hasAny);
+
+            } catch (e) {
+                console.error(e);
+                showError('코디를 불러오는데 실패했습니다.');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('outfitList').innerHTML = `<p class="text-red-500 text-center py-4">${msg}</p>`;
+        }
+    </script>
+</body>
+</html>

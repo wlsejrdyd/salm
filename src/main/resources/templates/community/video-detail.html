@@ -22,10 +22,10 @@
                 <!-- 작성자 -->
                 <div class="flex items-center space-x-3 mb-4">
                     <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-medium">
-                        <span th:text="${#strings.substring(video.authorName, 0, 1)}">U</span>
+                        <span th:text="${#strings.substring(video.authorNickname, 0, 1)}">U</span>
                     </div>
                     <div>
-                        <p class="font-medium text-gray-900" th:text="${video.authorName}">작성자</p>
+                        <p class="font-medium text-gray-900" th:text="${video.authorNickname}">작성자</p>
                         <p class="text-xs text-gray-500" th:text="${#temporals.format(video.createdAt, 'yyyy.MM.dd')}">날짜</p>
                     </div>
                 </div>
@@ -180,9 +180,9 @@
             
             list.innerHTML = data.data.map(c => `
                 <div class="flex space-x-3">
-                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm">${c.authorName.charAt(0)}</div>
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm">${c.authorNickname.charAt(0)}</div>
                     <div class="flex-1">
-                        <p class="text-sm"><strong>${c.authorName}</strong></p>
+                        <p class="text-sm"><strong>${c.authorNickname}</strong></p>
                         <p class="text-sm text-gray-600">${c.content}</p>
                     </div>
                 </div>

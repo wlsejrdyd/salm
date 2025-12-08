@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('내 코디')}"></head>
+<body class="bg-gray-50 min-h-screen">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">👔 내 코디 만들기</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 선택한 코디 미리보기 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl p-6 sticky top-24">
+                    <h3 class="font-bold text-gray-900 mb-4">선택한 코디</h3>
+                    
+                    <div id="selectedOutfit" class="space-y-3">
+                        <!-- 아우터 -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" id="selected-outer">
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">🧥</div>
+                            <div>
+                                <p class="text-xs text-gray-500">아우터</p>
+                                <p class="text-gray-400" id="name-outer">선택 안함</p>
+                            </div>
+                        </div>
+                        <!-- 상의 -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" id="selected-tops">
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">👕</div>
+                            <div>
+                                <p class="text-xs text-gray-500">상의</p>
+                                <p class="text-gray-400" id="name-tops">선택 안함</p>
+                            </div>
+                        </div>
+                        <!-- 하의 -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" id="selected-bottoms">
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">👖</div>
+                            <div>
+                                <p class="text-xs text-gray-500">하의</p>
+                                <p class="text-gray-400" id="name-bottoms">선택 안함</p>
+                            </div>
+                        </div>
+                        <!-- 신발 -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" id="selected-shoes">
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">👟</div>
+                            <div>
+                                <p class="text-xs text-gray-500">신발</p>
+                                <p class="text-gray-400" id="name-shoes">선택 안함</p>
+                            </div>
+                        </div>
+                        <!-- 악세서리 -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" id="selected-accessories">
+                            <div class="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">🎒</div>
+                            <div>
+                                <p class="text-xs text-gray-500">악세서리</p>
+                                <p class="text-gray-400" id="name-accessories">선택 안함</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex space-x-2">
+                        <button onclick="clearAll()" class="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">초기화</button>
+                        <button onclick="saveOutfit()" class="flex-1 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">저장</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 옷 선택 영역 -->
+            <div class="lg:col-span-2">
+                <!-- 카테고리 필터 -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button onclick="filterCategory('all')" data-cat="all"
+                            class="cat-btn px-4 py-2 bg-emerald-500 text-white rounded-full">
+                        전체
+                    </button>
+                    <button onclick="filterCategory('outer')" data-cat="outer"
+                            class="cat-btn px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50">
+                        🧥 아우터
+                    </button>
+                    <button onclick="filterCategory('tops')" data-cat="tops"
+                            class="cat-btn px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50">
+                        👕 상의
+                    </button>
+                    <button onclick="filterCategory('bottoms')" data-cat="bottoms"
+                            class="cat-btn px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50">
+                        👖 하의
+                    </button>
+                    <button onclick="filterCategory('shoes')" data-cat="shoes"
+                            class="cat-btn px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50">
+                        👟 신발
+                    </button>
+                    <button onclick="filterCategory('accessories')" data-cat="accessories"
+                            class="cat-btn px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50">
+                        🎒 악세서리
+                    </button>
+                </div>
+
+                <!-- 옷 목록 -->
+                <div th:if="${clothes.content.isEmpty()}" class="bg-white rounded-xl p-12 text-center">
+                    <p class="text-4xl mb-4">👕</p>
+                    <p class="text-gray-500">등록된 옷이 없어요</p>
+                    <a href="/closet/add" class="inline-block mt-4 text-emerald-500 hover:underline">옷 등록하러 가기</a>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="clothGrid">
+                    <div th:each="cloth : ${clothes.content}" 
+                         th:data-parent="${cloth.parentType}"
+                         th:data-id="${cloth.id}"
+                         th:data-image="${cloth.imagePath}"
+                         th:data-name="${cloth.name}"
+                         class="cloth-item bg-white rounded-xl overflow-hidden shadow-sm cursor-pointer group hover:shadow-lg transition"
+                         onclick="selectCloth(this)">
+                        <div class="aspect-square bg-gray-100 relative">
+                            <img th:if="${cloth.imagePath}" th:src="${cloth.imagePath}" 
+                                 class="w-full h-full object-cover" alt="">
+                            <div th:unless="${cloth.imagePath}" 
+                                 class="w-full h-full flex items-center justify-center text-3xl text-gray-300">👕</div>
+                            <!-- 선택 체크 -->
+                            <div class="check-mark hidden absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <!-- 카테고리 뱃지 -->
+                            <span class="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-xs rounded-full"
+                                  th:text="${cloth.categoryName}">패딩</span>
+                        </div>
+                        <div class="p-3">
+                            <p class="font-medium text-gray-900 truncate text-sm" th:text="${cloth.name}">옷 이름</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <style>
+        .cat-btn.active {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+        .cloth-item.selected {
+            ring: 3px;
+            ring-color: #10b981;
+            box-shadow: 0 0 0 3px #10b981;
+        }
+        .cloth-item.selected .check-mark {
+            display: flex;
+        }
+    </style>
+
+    <script>
+        const selected = {}; // { outer: {id, image, name}, tops: {...}, ... }
+        const icons = { outer: '🧥', tops: '👕', bottoms: '👖', shoes: '👟', accessories: '🎒' };
+
+        function filterCategory(cat) {
+            // 버튼 스타일
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-emerald-500', 'text-white');
+                btn.classList.add('bg-white', 'text-gray-700', 'border');
+            });
+            const activeBtn = document.querySelector(`.cat-btn[data-cat="${cat}"]`);
+            activeBtn.classList.add('active', 'bg-emerald-500', 'text-white');
+            activeBtn.classList.remove('bg-white', 'text-gray-700', 'border');
+
+            // 옷 필터링
+            document.querySelectorAll('.cloth-item').forEach(item => {
+                if (cat === 'all' || item.dataset.parent === cat) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function selectCloth(el) {
+            const parentType = el.dataset.parent;
+            const id = el.dataset.id;
+            const image = el.dataset.image;
+            const name = el.dataset.name;
+
+            // 같은 카테고리의 이전 선택 해제
+            if (selected[parentType]) {
+                const prevEl = document.querySelector(`.cloth-item[data-id="${selected[parentType].id}"]`);
+                if (prevEl) prevEl.classList.remove('selected');
+            }
+
+            // 같은 거 다시 클릭하면 해제
+            if (selected[parentType]?.id === id) {
+                delete selected[parentType];
+                el.classList.remove('selected');
+            } else {
+                // 새로 선택
+                selected[parentType] = { id, image, name };
+                el.classList.add('selected');
+            }
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const types = ['outer', 'tops', 'bottoms', 'shoes', 'accessories'];
+            
+            types.forEach(type => {
+                const container = document.getElementById(`selected-${type}`);
+                const nameEl = document.getElementById(`name-${type}`);
+                const imgContainer = container.querySelector('div:first-child');
+
+                if (selected[type]) {
+                    if (selected[type].image) {
+                        imgContainer.innerHTML = `<img src="${selected[type].image}" class="w-full h-full object-cover rounded-lg">`;
+                    }
+                    nameEl.textContent = selected[type].name;
+                    nameEl.classList.remove('text-gray-400');
+                    nameEl.classList.add('text-gray-900', 'font-medium');
+                } else {
+                    imgContainer.innerHTML = `<span class="text-2xl">${icons[type]}</span>`;
+                    imgContainer.className = 'w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl';
+                    nameEl.textContent = '선택 안함';
+                    nameEl.classList.add('text-gray-400');
+                    nameEl.classList.remove('text-gray-900', 'font-medium');
+                }
+            });
+        }
+
+        function clearAll() {
+            Object.keys(selected).forEach(key => delete selected[key]);
+            document.querySelectorAll('.cloth-item.selected').forEach(el => el.classList.remove('selected'));
+            updatePreview();
+        }
+
+        function saveOutfit() {
+            const count = Object.keys(selected).length;
+            if (count === 0) {
+                alert('옷을 선택해주세요');
+                return;
+            }
+            alert(`${count}개 아이템 선택됨!\n코디 저장 기능은 준비 중입니다.`);
+        }
+    </script>
+</body>
+</html>

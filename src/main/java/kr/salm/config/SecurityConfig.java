@@ -28,12 +28,14 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/**")
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/img/**", "/videos/**", "/thumbnails/**", "/favicon.ico").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/img/**", "/videos/**", "/thumbnails/**", "/clothes/**", "/favicon.ico").permitAll()
                 .requestMatchers("/", "/login", "/signup", "/oauth2/**", "/api/auth/check/**").permitAll()
                 .requestMatchers("/videos", "/videos/{id:[0-9]+}", "/category/**").permitAll()
                 .requestMatchers("/api/videos", "/api/videos/{id:[0-9]+}", "/api/videos/{id}/comments").permitAll()
-                .requestMatchers("/videos/upload", "/videos/*/delete").authenticated()
-                .requestMatchers("/api/videos/{id}/like", "/api/videos/{id}/bookmark").authenticated()
+                // closet
+                .requestMatchers("/closet/**").authenticated()
+                .requestMatchers("/api/closet/**").authenticated()
+                // 나머지
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

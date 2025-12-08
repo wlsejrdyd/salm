@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('내 옷장')}"></head>
+<body class="bg-gray-50 min-h-screen">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 날씨 카드 -->
+        <div class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-2xl p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100">오늘의 날씨</p>
+                    <h2 class="text-4xl font-bold" th:text="${weather.temperature} + '°'">5°</h2>
+                    <p class="text-blue-100" th:text="${weather.city} + ' · 체감 ' + ${weather.feelsLike} + '°'">서울 · 체감 2°</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-6xl">
+                        <span th:switch="${weather.condition}">
+                            <span th:case="'Clear'">☀️</span>
+                            <span th:case="'Clouds'">☁️</span>
+                            <span th:case="'Rain'">🌧️</span>
+                            <span th:case="'Snow'">❄️</span>
+                            <span th:case="*">🌤️</span>
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <p class="mt-3 text-blue-100" th:text="${weather.recommendation}">추천 메시지</p>
+        </div>
+
+        <!-- 빠른 메뉴 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <a href="/closet/wardrobe" class="bg-white rounded-xl p-6 text-center hover:shadow-lg transition">
+                <span class="text-4xl">👕</span>
+                <p class="mt-2 font-medium">내 옷장</p>
+                <p class="text-sm text-gray-500">등록한 옷 보기</p>
+            </a>
+            <a href="/closet/add" class="bg-white rounded-xl p-6 text-center hover:shadow-lg transition">
+                <span class="text-4xl">➕</span>
+                <p class="mt-2 font-medium">옷 등록</p>
+                <p class="text-sm text-gray-500">새 옷 추가하기</p>
+            </a>
+            <a href="/closet/outfit" class="bg-white rounded-xl p-6 text-center hover:shadow-lg transition">
+                <span class="text-4xl">🎲</span>
+                <p class="mt-2 font-medium">코디 추천</p>
+                <p class="text-sm text-gray-500">오늘 뭐 입지?</p>
+            </a>
+            <a href="/closet/avatar" class="bg-white rounded-xl p-6 text-center hover:shadow-lg transition">
+                <span class="text-4xl">👔</span>
+                <p class="mt-2 font-medium">내 코디</p>
+                <p class="text-sm text-gray-500">직접 조합하기</p>
+            </a>
+        </div>
+
+        <!-- 최근 등록한 옷 -->
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-900">최근 등록한 옷</h3>
+            <a href="/closet/wardrobe" class="text-emerald-500 hover:underline text-sm">전체보기 →</a>
+        </div>
+        
+        <div th:if="${clothes.content.isEmpty()}" class="bg-white rounded-xl text-center py-12 text-gray-500">
+            <p class="text-4xl mb-4">👕</p>
+            <p>아직 등록된 옷이 없어요</p>
+            <a href="/closet/add" class="inline-block mt-4 px-6 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">첫 번째 옷 등록하기</a>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div th:each="cloth : ${clothes.content}" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition">
+                <div class="aspect-square bg-gray-100">
+                    <img th:if="${cloth.imagePath}" th:src="${cloth.imagePath}" class="w-full h-full object-cover" alt="">
+                    <div th:unless="${cloth.imagePath}" class="w-full h-full flex items-center justify-center text-4xl text-gray-300">👕</div>
+                </div>
+                <div class="p-3">
+                    <p class="font-medium text-gray-900 truncate" th:text="${cloth.name}">옷 이름</p>
+                    <p class="text-sm text-gray-500" th:text="${cloth.categoryName}">카테고리</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

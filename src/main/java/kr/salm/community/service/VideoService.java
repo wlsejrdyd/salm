@@ -3,16 +3,17 @@ package kr.salm.community.service;
 import kr.salm.auth.entity.User;
 import kr.salm.community.dto.VideoResponse;
 import kr.salm.community.dto.VideoUploadRequest;
-import kr.salm.community.entity.*;
+import kr.salm.community.entity.Category;
+import kr.salm.community.entity.Video;
 import kr.salm.community.repository.*;
 import kr.salm.core.dto.PageResponse;
 import kr.salm.core.exception.BusinessException;
-import kr.salm.core.util.HtmlSanitizer;
 import kr.salm.file.service.VideoFileService;
-import kr.salm.file.service.VideoFileService.VideoUploadResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,33 +30,31 @@ public class VideoService {
     private final CategoryRepository categoryRepository;
     private final VideoLikeRepository likeRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final VideoFileService fileService;
+    private final VideoFileService videoFileService;
 
     @Transactional
-    public Video upload(VideoUploadRequest request, MultipartFile videoFile, User author) {
+    public Video upload(VideoUploadRequest request, MultipartFile videoFile, User user) {
         Category category = categoryRepository.findBySlug(request.getCategory())
                 .orElseThrow(() -> BusinessException.notFound("카테고리"));
 
-        VideoUploadResult result = fileService.upload(videoFile);
+        var result = videoFileService.upload(videoFile);
 
         Video video = Video.builder()
-                .title(HtmlSanitizer.sanitize(request.getTitle()))
-                .description(request.getDescription() != null ? HtmlSanitizer.sanitizeContent(request.getDescription()) : null)
-                .author(author)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .author(user)
                 .category(category)
-                .videoPath(result.getVideoPath())
-                .thumbnailPath(result.getThumbnailPath())
-                .duration(result.getDuration())
-                .width(result.getWidth())
-                .height(result.getHeight())
-                .fileSize(result.getFileSize())
+                .videoPath(result.videoPath())
+                .thumbnailPath(result.thumbnailPath())
+                .duration(result.metadata().duration())
+                .width(result.metadata().width())
+                .height(result.metadata().height())
+                .fileSize(result.metadata().fileSize())
                 .hashtags(request.getHashtags())
                 .productUrl(request.getProductUrl())
                 .build();
 
-        Video saved = videoRepository.save(video);
-        log.info("영상 업로드: id={}, title={}", saved.getId(), saved.getTitle());
-        return saved;
+        return videoRepository.save(video);
     }
 
     @Transactional
@@ -73,60 +72,71 @@ public class VideoService {
     }
 
     @Transactional
-    public VideoResponse getDetail(Long id, User currentUser) {
+    public VideoResponse getDetail(Long id, User user) {
         Video video = findById(id);
-        VideoResponse response = VideoResponse.from(video);
+        boolean liked = false;
+        boolean bookmarked = false;
 
-        if (currentUser != null) {
-            response.setLiked(likeRepository.existsByVideoAndUser(video, currentUser));
-            response.setBookmarked(bookmarkRepository.existsByVideoAndUser(video, currentUser));
+        if (user != null) {
+            liked = likeRepository.existsByVideoAndUser(video, user);
+            bookmarked = bookmarkRepository.existsByVideoAndUser(video, user);
         }
-        return response;
+
+        return VideoResponse.from(video, liked, bookmarked);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<VideoResponse> findAll(int page, int size) {
-        Page<Video> videos = videoRepository.findAllActive(PageRequest.of(page, size));
-        return PageResponse.of(videos, toResponseList(videos.getContent()));
+        Page<Video> videos = videoRepository.findAllActive(PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        List<VideoResponse> content = videos.getContent().stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
+        return PageResponse.of(videos, content);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<VideoResponse> findByCategory(String slug, int page, int size) {
         Category category = categoryRepository.findBySlug(slug)
                 .orElseThrow(() -> BusinessException.notFound("카테고리"));
-        Page<Video> videos = videoRepository.findByCategory(category, PageRequest.of(page, size));
-        return PageResponse.of(videos, toResponseList(videos.getContent()));
+        Page<Video> videos = videoRepository.findByCategory(category, PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        List<VideoResponse> content = videos.getContent().stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
+        return PageResponse.of(videos, content);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<VideoResponse> search(String keyword, int page, int size) {
         Page<Video> videos = videoRepository.search(keyword, PageRequest.of(page, size));
-        return PageResponse.of(videos, toResponseList(videos.getContent()));
+        List<VideoResponse> content = videos.getContent().stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
+        return PageResponse.of(videos, content);
     }
 
     @Transactional(readOnly = true)
-    public List<VideoResponse> findLatest(int count) {
-        Page<Video> videos = videoRepository.findAllActive(PageRequest.of(0, count));
-        return toResponseList(videos.getContent());
+    public List<VideoResponse> findLatest(int limit) {
+        return videoRepository.findAllActive(PageRequest.of(0, limit, Sort.by("createdAt").descending()))
+                .getContent().stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<VideoResponse> findPopular(int count) {
-        List<Video> videos = videoRepository.findPopular(PageRequest.of(0, count));
-        return toResponseList(videos);
+    public List<VideoResponse> findPopular(int limit) {
+        return videoRepository.findPopular(PageRequest.of(0, limit))
+                .stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public void delete(Long id, User currentUser) {
-        Video video = findByIdWithoutView(id);
-        if (!video.getAuthor().getId().equals(currentUser.getId()) && !currentUser.isAdmin()) {
+    public void delete(Long id, User user) {
+        Video video = videoRepository.findById(id)
+                .orElseThrow(() -> BusinessException.notFound("영상"));
+        if (!video.getAuthor().getId().equals(user.getId())) {
             throw BusinessException.forbidden("삭제 권한이 없습니다.");
         }
-        video.softDelete();
-        log.info("영상 삭제: id={}", id);
-    }
-
-    private List<VideoResponse> toResponseList(List<Video> videos) {
-        return videos.stream().map(VideoResponse::from).collect(Collectors.toList());
+        video.setDeleted(true);
     }
 }

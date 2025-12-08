@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('내 옷장')}"></head>
+<body class="bg-gray-50 min-h-screen">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">내 옷장</h1>
+            <a href="/closet/add" class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600">+ 옷 등록</a>
+        </div>
+
+        <!-- 카테고리 필터 -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <a href="/closet/wardrobe" 
+               th:class="${currentCategory == null} ? 'px-4 py-2 bg-emerald-500 text-white rounded-full' : 'px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50'">전체</a>
+            <a th:each="cat : ${categories}" th:href="@{/closet/wardrobe(category=${cat.slug})}"
+               th:class="${currentCategory == cat.slug} ? 'px-4 py-2 bg-emerald-500 text-white rounded-full' : 'px-4 py-2 bg-white text-gray-700 rounded-full border hover:bg-emerald-50'">
+                <span th:text="${cat.icon}">👕</span>
+                <span th:text="${cat.name}">카테고리</span>
+            </a>
+        </div>
+
+        <!-- 옷 목록 -->
+        <div th:if="${clothes.content.isEmpty()}" class="text-center py-16 text-gray-500">
+            <p class="text-4xl mb-4">👕</p>
+            <p>아직 등록된 옷이 없어요</p>
+            <a href="/closet/add" class="inline-block mt-4 text-emerald-500">첫 번째 옷을 등록해보세요!</a>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div th:each="cloth : ${clothes.content}" class="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition group">
+                <div class="aspect-square bg-gray-100 relative">
+                    <img th:if="${cloth.imagePath}" th:src="${cloth.imagePath}" class="w-full h-full object-cover" alt="">
+                    <div th:unless="${cloth.imagePath}" class="w-full h-full flex items-center justify-center text-4xl text-gray-300">👕</div>
+                    <button onclick="toggleFavorite(this)" th:data-id="${cloth.id}"
+                            class="absolute top-2 right-2 p-2 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition">
+                        <span th:if="${cloth.isFavorite}">❤️</span>
+                        <span th:unless="${cloth.isFavorite}">🤍</span>
+                    </button>
+                </div>
+                <div class="p-3">
+                    <p class="font-medium text-gray-900 truncate" th:text="${cloth.name}">옷 이름</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <p class="text-sm text-gray-500" th:text="${cloth.categoryName}">카테고리</p>
+                        <p th:if="${cloth.wearCount != null and cloth.wearCount > 0}" class="text-xs text-gray-400" th:text="${cloth.wearCount} + '회 착용'">0회 착용</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div th:if="${clothes.totalPages > 1}" class="flex justify-center mt-8 space-x-2">
+            <a th:if="${clothes.page > 0}" 
+               th:href="@{/closet/wardrobe(page=${clothes.page - 1}, category=${currentCategory})}"
+               class="px-4 py-2 border rounded-lg hover:bg-gray-50">이전</a>
+            <span class="px-4 py-2 text-gray-600" th:text="${clothes.page + 1} + ' / ' + ${clothes.totalPages}">1 / 1</span>
+            <a th:if="${clothes.hasNext}" 
+               th:href="@{/closet/wardrobe(page=${clothes.page + 1}, category=${currentCategory})}"
+               class="px-4 py-2 border rounded-lg hover:bg-gray-50">다음</a>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script>
+        async function toggleFavorite(btn) {
+            const id = btn.dataset.id;
+            await fetch(`/api/closet/clothes/${id}/favorite`, { method: 'POST' });
+            location.reload();
+        }
+    </script>
+</body>
+</html>
