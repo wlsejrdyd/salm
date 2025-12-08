@@ -1,14 +1,14 @@
 package kr.salm.community.controller;
 
 import jakarta.validation.Valid;
-import kr.salm.auth.service.CustomUserDetails;
+import kr.salm.auth.entity.User;
+import kr.salm.auth.service.AuthUtil;
 import kr.salm.community.dto.*;
 import kr.salm.community.service.*;
 import kr.salm.core.dto.ApiResponse;
 import kr.salm.core.dto.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -35,18 +35,19 @@ public class VideoApiController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<VideoResponse>> detail(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        var user = userDetails != null ? userDetails.getUser() : null;
+    public ResponseEntity<ApiResponse<VideoResponse>> detail(@PathVariable Long id) {
+        User user = AuthUtil.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success(videoService.getDetail(id, user)));
     }
 
     @PostMapping("/{id}/like")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleLike(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        boolean liked = likeService.toggle(id, userDetails.getUser());
+    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleLike(@PathVariable Long id) {
+        User user = AuthUtil.getCurrentUser();
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("UNAUTHORIZED", "로그인이 필요합니다."));
+        }
+        
+        boolean liked = likeService.toggle(id, user);
         var video = videoService.findByIdWithoutView(id);
         return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "liked", liked,
@@ -55,10 +56,13 @@ public class VideoApiController {
     }
 
     @PostMapping("/{id}/bookmark")
-    public ResponseEntity<ApiResponse<Map<String, Boolean>>> toggleBookmark(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        boolean bookmarked = bookmarkService.toggle(id, userDetails.getUser());
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> toggleBookmark(@PathVariable Long id) {
+        User user = AuthUtil.getCurrentUser();
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("UNAUTHORIZED", "로그인이 필요합니다."));
+        }
+        
+        boolean bookmarked = bookmarkService.toggle(id, user);
         return ResponseEntity.ok(ApiResponse.success(Map.of("bookmarked", bookmarked)));
     }
 
@@ -70,9 +74,13 @@ public class VideoApiController {
     @PostMapping("/{id}/comments")
     public ResponseEntity<ApiResponse<CommentResponse>> addComment(
             @PathVariable Long id,
-            @Valid @RequestBody CommentRequest request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        var comment = commentService.create(id, request, userDetails.getUser());
+            @Valid @RequestBody CommentRequest request) {
+        User user = AuthUtil.getCurrentUser();
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("UNAUTHORIZED", "로그인이 필요합니다."));
+        }
+        
+        var comment = commentService.create(id, request, user);
         return ResponseEntity.ok(ApiResponse.success(CommentResponse.from(comment)));
     }
 }

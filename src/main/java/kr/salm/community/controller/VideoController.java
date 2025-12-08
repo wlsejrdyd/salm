@@ -1,13 +1,13 @@
 package kr.salm.community.controller;
 
 import jakarta.validation.Valid;
-import kr.salm.auth.service.CustomUserDetails;
+import kr.salm.auth.entity.User;
+import kr.salm.auth.service.AuthUtil;
 import kr.salm.community.dto.VideoUploadRequest;
 import kr.salm.community.entity.Video;
 import kr.salm.community.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -38,9 +38,8 @@ public class VideoController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id,
-                        @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-        var user = userDetails != null ? userDetails.getUser() : null;
+    public String detail(@PathVariable Long id, Model model) {
+        User user = AuthUtil.getCurrentUser();
         model.addAttribute("video", videoService.getDetail(id, user));
         return "community/video-detail";
     }
@@ -56,15 +55,20 @@ public class VideoController {
     public String upload(@Valid @ModelAttribute("request") VideoUploadRequest request,
                         BindingResult bindingResult,
                         @RequestParam("videoFile") MultipartFile videoFile,
-                        @AuthenticationPrincipal CustomUserDetails userDetails,
                         RedirectAttributes redirectAttributes, Model model) {
+        
+        User user = AuthUtil.getCurrentUser();
+        if (user == null) {
+            return "redirect:/login";
+        }
+
         if (bindingResult.hasErrors()) {
             model.addAttribute("categories", categoryService.findAll());
             return "community/upload";
         }
 
         try {
-            Video video = videoService.upload(request, videoFile, userDetails.getUser());
+            Video video = videoService.upload(request, videoFile, user);
             redirectAttributes.addFlashAttribute("message", "영상이 업로드되었습니다.");
             return "redirect:/videos/" + video.getId();
         } catch (Exception e) {
@@ -76,10 +80,13 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id,
-                        @AuthenticationPrincipal CustomUserDetails userDetails,
-                        RedirectAttributes redirectAttributes) {
-        videoService.delete(id, userDetails.getUser());
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        User user = AuthUtil.getCurrentUser();
+        if (user == null) {
+            return "redirect:/login";
+        }
+        
+        videoService.delete(id, user);
         redirectAttributes.addFlashAttribute("message", "영상이 삭제되었습니다.");
         return "redirect:/";
     }

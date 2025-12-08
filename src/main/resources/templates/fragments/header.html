@@ -29,15 +29,11 @@
                     <a href="/signup" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200">회원가입</a>
                 </div>
 
-                <div sec:authorize="isAuthenticated()" class="relative">
+                <div sec:authorize="isAuthenticated()" class="relative" th:with="user=${#authentication.principal.user}">
                     <button onclick="toggleDropdown(event)" class="flex items-center space-x-2">
-                        <!-- OAuth 프로필 이미지 or 기본 아바타 -->
                         <div class="w-9 h-9 rounded-full overflow-hidden bg-emerald-500 flex items-center justify-center text-white font-medium">
-                            <img th:if="${#authorization.expression('principal.user.profileImage != null')}" 
-                                 th:src="${#authorization.expression('principal.user.profileImage')}"
-                                 class="w-full h-full object-cover" alt="">
-                            <span th:unless="${#authorization.expression('principal.user.profileImage != null')}"
-                                  th:text="${#strings.substring(#authorization.expression('principal.user.nickname'), 0, 1)}">U</span>
+                            <img th:if="${user.profileImage}" th:src="${user.profileImage}" class="w-full h-full object-cover" alt="">
+                            <span th:unless="${user.profileImage}" th:text="${#strings.substring(user.nickname, 0, 1)}">U</span>
                         </div>
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>

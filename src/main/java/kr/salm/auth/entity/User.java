@@ -24,7 +24,7 @@ public class User extends BaseEntity {
     private String username;
 
     @Column
-    private String password;
+    private String password;  // OAuth 사용자는 null
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
@@ -39,9 +39,8 @@ public class User extends BaseEntity {
     @Builder.Default
     private String role = "USER";
 
-    // OAuth
     @Column(length = 20)
-    private String provider;  // google, kakao, naver
+    private String provider;
 
     @Column(length = 100)
     private String providerId;
