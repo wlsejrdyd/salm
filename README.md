@@ -85,15 +85,6 @@ sudo systemctl restart salm
 
 ---
 
-## 🔗 연관 프로젝트
-
-| 프로젝트 | 설명 |
-|---------|------|
-| [infra](https://github.com/wlsejrdyd/infra) | 인프라 모니터링 대시보드 |
-| [mgmt](https://github.com/wlsejrdyd/mgmt) | 통합 관리 시스템 |
-
----
-
 ## 👤 Author
 
 - GitHub: [@wlsejrdyd](https://github.com/wlsejrdyd)
