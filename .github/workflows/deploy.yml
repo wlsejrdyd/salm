@@ -44,5 +44,5 @@ jobs:
       # 헬스체크
       - name: Health Check
         run: |
-          sleep 10
+          sleep 60
           curl -f https://salm.kr/actuator/health || exit 1
