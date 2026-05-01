@@ -9,8 +9,10 @@ import kr.salm.community.repository.*;
 import kr.salm.core.dto.PageResponse;
 import kr.salm.core.exception.BusinessException;
 import kr.salm.file.service.VideoFileService;
+import kr.salm.file.service.VideoFileService.PreparedUpload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -31,30 +33,57 @@ public class VideoService {
     private final VideoLikeRepository likeRepository;
     private final BookmarkRepository bookmarkRepository;
     private final VideoFileService videoFileService;
+    private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 업로드:
+     *   1) 원본 저장 + 메타 추출 (동기, ~수초)
+     *   2) Video 엔티티 PROCESSING 상태로 즉시 저장
+     *   3) 트랜잭션 커밋 후 EncodeRequestedEvent 발행 → VideoEncodeListener 가 큐잉
+     */
     @Transactional
     public Video upload(VideoUploadRequest request, MultipartFile videoFile, User user) {
         Category category = categoryRepository.findBySlug(request.getCategory())
                 .orElseThrow(() -> BusinessException.notFound("카테고리"));
 
-        var result = videoFileService.upload(videoFile);
+        PreparedUpload prep = videoFileService.prepareUpload(videoFile);
 
         Video video = Video.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .author(user)
                 .category(category)
-                .videoPath(result.videoPath())
-                .thumbnailPath(result.thumbnailPath())
-                .duration(result.metadata().duration())
-                .width(result.metadata().width())
-                .height(result.metadata().height())
-                .fileSize(result.metadata().fileSize())
+                .videoPath(prep.videoPath())
+                .thumbnailPath(prep.thumbnailPath())
+                .duration(prep.metadata().duration())
+                .width(prep.metadata().width())
+                .height(prep.metadata().height())
+                .fileSize(prep.metadata().fileSize())
                 .hashtags(request.getHashtags())
                 .productUrl(request.getProductUrl())
+                .status(Video.Status.PROCESSING)
                 .build();
 
-        return videoRepository.save(video);
+        Video saved = videoRepository.save(video);
+        eventPublisher.publishEvent(new EncodeRequestedEvent(saved.getId(), prep));
+        return saved;
+    }
+
+    @Transactional
+    public void markReady(Long id) {
+        videoRepository.findById(id).ifPresent(v -> {
+            v.setStatus(Video.Status.READY);
+            v.setFailureReason(null);
+        });
+    }
+
+    @Transactional
+    public void markFailed(Long id, String reason) {
+        videoRepository.findById(id).ifPresent(v -> {
+            v.setStatus(Video.Status.FAILED);
+            v.setFailureReason(reason == null ? "unknown"
+                    : reason.substring(0, Math.min(reason.length(), 480)));
+        });
     }
 
     @Transactional
@@ -88,10 +117,7 @@ public class VideoService {
     @Transactional(readOnly = true)
     public PageResponse<VideoResponse> findAll(int page, int size) {
         Page<Video> videos = videoRepository.findAllActive(PageRequest.of(page, size, Sort.by("createdAt").descending()));
-        List<VideoResponse> content = videos.getContent().stream()
-                .map(v -> VideoResponse.from(v, false, false))
-                .collect(Collectors.toList());
-        return PageResponse.of(videos, content);
+        return toPageResponse(videos);
     }
 
     @Transactional(readOnly = true)
@@ -99,19 +125,13 @@ public class VideoService {
         Category category = categoryRepository.findBySlug(slug)
                 .orElseThrow(() -> BusinessException.notFound("카테고리"));
         Page<Video> videos = videoRepository.findByCategory(category, PageRequest.of(page, size, Sort.by("createdAt").descending()));
-        List<VideoResponse> content = videos.getContent().stream()
-                .map(v -> VideoResponse.from(v, false, false))
-                .collect(Collectors.toList());
-        return PageResponse.of(videos, content);
+        return toPageResponse(videos);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<VideoResponse> search(String keyword, int page, int size) {
         Page<Video> videos = videoRepository.search(keyword, PageRequest.of(page, size));
-        List<VideoResponse> content = videos.getContent().stream()
-                .map(v -> VideoResponse.from(v, false, false))
-                .collect(Collectors.toList());
-        return PageResponse.of(videos, content);
+        return toPageResponse(videos);
     }
 
     @Transactional(readOnly = true)
@@ -139,4 +159,13 @@ public class VideoService {
         }
         video.setDeleted(true);
     }
+
+    private PageResponse<VideoResponse> toPageResponse(Page<Video> videos) {
+        List<VideoResponse> content = videos.getContent().stream()
+                .map(v -> VideoResponse.from(v, false, false))
+                .collect(Collectors.toList());
+        return PageResponse.of(videos, content);
+    }
+
+    public record EncodeRequestedEvent(Long videoId, PreparedUpload prep) {}
 }

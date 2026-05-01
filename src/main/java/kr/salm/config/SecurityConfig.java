@@ -28,9 +28,13 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/api/**")
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/js/**", "/img/**", "/videos/**", "/thumbnails/**", "/clothes/**", "/favicon.ico").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico", "/manifest.webmanifest", "/sw.js").permitAll()
+                // 미디어: Nginx가 /media/** 와 레거시 /videos/**, /thumbnails/**, /clothes/** 를 직접 서빙하는 것이 정상.
+                // Spring ResourceHandler는 nginx 미설정 환경/로컬 개발용 폴백.
+                .requestMatchers("/media/**", "/videos/**", "/thumbnails/**", "/clothes/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/", "/login", "/signup", "/oauth2/**", "/api/auth/check/**").permitAll()
-                .requestMatchers("/videos", "/videos/{id:[0-9]+}", "/category/**").permitAll()
+                .requestMatchers("/videos", "/videos/{id:[0-9]+}", "/category/**", "/feed").permitAll()
                 .requestMatchers("/api/videos", "/api/videos/{id:[0-9]+}", "/api/videos/{id}/comments").permitAll()
                 // closet
                 .requestMatchers("/closet/**").authenticated()

@@ -9,13 +9,16 @@ import lombok.*;
 @Table(name = "videos", indexes = {
     @Index(name = "idx_video_author", columnList = "author_id"),
     @Index(name = "idx_video_category", columnList = "category_id"),
-    @Index(name = "idx_video_created", columnList = "created_at DESC")
+    @Index(name = "idx_video_created", columnList = "created_at DESC"),
+    @Index(name = "idx_video_status", columnList = "status")
 })
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Video extends BaseEntity {
+
+    public enum Status { UPLOADED, PROCESSING, READY, FAILED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -74,6 +77,13 @@ public class Video extends BaseEntity {
 
     @Column(nullable = false) @Builder.Default
     private boolean deleted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16) @Builder.Default
+    private Status status = Status.UPLOADED;
+
+    @Column(length = 500)
+    private String failureReason;
 
     public void incrementViewCount() { this.viewCount++; }
     public void incrementLikeCount() { this.likeCount++; }

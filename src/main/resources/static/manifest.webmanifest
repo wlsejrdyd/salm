@@ -1,0 +1,37 @@
+{
+  "name": "SALM 살림",
+  "short_name": "SALM",
+  "description": "일상 살림 정보를 숏폼 영상으로 공유하는 플랫폼",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "lang": "ko",
+  "categories": ["lifestyle", "social"],
+  "icons": [
+    {
+      "src": "/img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "피드",
+      "short_name": "피드",
+      "description": "숏폼 영상 피드",
+      "url": "/feed",
+      "icons": [{ "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "옷장",
+      "short_name": "옷장",
+      "description": "내 옷장 관리",
+      "url": "/closet",
+      "icons": [{ "src": "/img/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

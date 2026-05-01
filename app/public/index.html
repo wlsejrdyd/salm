@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SALM</title>
+    <style>
+        body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+               background: #10b981; color: white; font-family: -apple-system, system-ui, sans-serif; }
+    </style>
+</head>
+<body>
+    <p>SALM 로딩 중…</p>
+    <script>
+        // 원격 URL 모드에서는 capacitor.config.ts 의 server.url 이 우선됨.
+        // 정적 빌드 모드로 전환하면 이 페이지가 진입점이 됨.
+        location.replace('https://salm.kr');
+    </script>
+</body>
+</html>
