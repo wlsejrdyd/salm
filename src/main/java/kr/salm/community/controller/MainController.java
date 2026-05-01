@@ -28,4 +28,10 @@ public class MainController {
         model.addAttribute("videos", videoService.findByCategory(slug, page, 12));
         return "community/videos";
     }
+
+    @GetMapping("/feed")
+    public String feed(Model model) {
+        model.addAttribute("videos", videoService.findLatest(20));
+        return "community/feed";
+    }
 }

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('피드')}"></head>
+<body class="bg-black overflow-hidden">
+
+<main class="feed-container" id="feed">
+    <section th:each="v : ${videos}"
+             th:if="${v.ready}"
+             class="feed-item"
+             th:data-hls="${v.hlsUrl}"
+             th:data-mp4="${v.mp4Url}"
+             th:data-poster="${v.thumbnailPath}"
+             th:data-id="${v.id}">
+        <video class="feed-video" playsinline preload="none" muted loop
+               th:poster="${v.thumbnailPath}"></video>
+        <div class="feed-overlay">
+            <a href="/" class="feed-back" aria-label="뒤로">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="feed-info">
+                <p class="feed-author" th:text="'@' + ${v.authorNickname}">@user</p>
+                <p class="feed-title" th:text="${v.title}">제목</p>
+                <p th:if="${v.description}" class="feed-desc" th:text="${v.description}">설명</p>
+            </div>
+            <div class="feed-actions">
+                <a th:href="@{/videos/{id}(id=${v.id})}" class="feed-action" aria-label="상세">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                </a>
+                <span class="feed-stat" th:text="'❤️ ' + ${v.likeCount}">❤️ 0</span>
+                <span class="feed-stat" th:text="'💬 ' + ${v.commentCount}">💬 0</span>
+                <span class="feed-stat" th:text="'👁 ' + ${v.viewCount}">👁 0</span>
+            </div>
+        </div>
+    </section>
+
+    <section th:if="${videos == null or videos.isEmpty()}" class="feed-item flex items-center justify-center text-white">
+        <p>아직 영상이 없습니다.</p>
+    </section>
+</main>
+
+<style>
+    html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior-y: none; }
+    .feed-container {
+        height: 100dvh;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+        scrollbar-width: none;
+    }
+    .feed-container::-webkit-scrollbar { display: none; }
+    .feed-item {
+        position: relative;
+        height: 100dvh;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        background: #000;
+        overflow: hidden;
+    }
+    .feed-video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+    }
+    .feed-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .feed-overlay > * { pointer-events: auto; }
+    .feed-back {
+        align-self: flex-start;
+        margin: 1rem;
+        color: white;
+        background: rgba(0,0,0,0.4);
+        padding: 0.5rem;
+        border-radius: 9999px;
+    }
+    .feed-info {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 1rem;
+        right: 5rem;
+        color: white;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .feed-author { font-weight: 600; font-size: 0.95rem; }
+    .feed-title { font-size: 1.05rem; margin-top: 0.25rem; }
+    .feed-desc { font-size: 0.85rem; opacity: 0.85; margin-top: 0.25rem;
+                 display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+                 overflow: hidden; }
+    .feed-actions {
+        position: absolute;
+        right: 1rem;
+        bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        color: white;
+    }
+    .feed-action {
+        background: rgba(0,0,0,0.4);
+        padding: 0.5rem;
+        border-radius: 9999px;
+    }
+    .feed-stat { font-size: 0.85rem; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<script>
+    const items = document.querySelectorAll('.feed-item[data-id]');
+    const players = new Map(); // id -> { video, hls? }
+
+    function ensureLoaded(item) {
+        const id = item.dataset.id;
+        if (players.has(id)) return players.get(id);
+
+        const video = item.querySelector('.feed-video');
+        const hlsUrl = item.dataset.hls;
+        const mp4Url = item.dataset.mp4;
+        let hls = null;
+
+        if (hlsUrl && video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = hlsUrl;
+        } else if (hlsUrl && window.Hls && Hls.isSupported()) {
+            hls = new Hls({ maxBufferLength: 15, capLevelToPlayerSize: true });
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, (_, data) => {
+                if (data.fatal && mp4Url) { hls.destroy(); video.src = mp4Url; }
+            });
+        } else if (mp4Url) {
+            video.src = mp4Url;
+        }
+
+        const entry = { video, hls };
+        players.set(id, entry);
+        return entry;
+    }
+
+    function release(item) {
+        const id = item.dataset.id;
+        const entry = players.get(id);
+        if (!entry) return;
+        entry.video.pause();
+        if (entry.hls) entry.hls.destroy();
+        entry.video.removeAttribute('src');
+        entry.video.load();
+        players.delete(id);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+            if (e.intersectionRatio >= 0.7) {
+                const { video } = ensureLoaded(e.target);
+                video.play().catch(() => {});
+            } else {
+                const entry = players.get(e.target.dataset.id);
+                if (entry) entry.video.pause();
+                if (e.intersectionRatio < 0.1) release(e.target);
+            }
+        });
+    }, { threshold: [0, 0.1, 0.7, 1] });
+
+    items.forEach((it) => observer.observe(it));
+
+    // 첫 영상은 즉시 로드
+    if (items[0]) {
+        const { video } = ensureLoaded(items[0]);
+        video.play().catch(() => {});
+    }
+
+    // 탭에 사용자 인터랙션 후 unmute (자동재생 정책 우회)
+    let unmuted = false;
+    document.addEventListener('click', () => {
+        if (unmuted) return;
+        unmuted = true;
+        players.forEach(({ video }) => { video.muted = false; });
+    }, { once: true });
+</script>
+
+</body>
+</html>
